@@ -9,7 +9,7 @@ if [ ! -f output.json ]; then
     exit 0
 fi
 
-latest_version=$(cat output.json | jq -r '.[0].version')
+latest_version=$(cat output.json | jq -jr '.[0].version')
 echo "version=$latest_version" >> $GITHUB_OUTPUT
 echo "::notice title=Latest APK Version::$latest_version"
 if [ -z "$latest_version" ]; then

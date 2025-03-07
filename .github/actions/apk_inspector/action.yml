@@ -40,7 +40,7 @@ runs:
     - name: Check the APK version
       id: get-version
       shell: bash
-      run: ./scripts/extract_version.sh
+      run: ./scripts/extract_version.sh ${{ inputs.package_name }} ${{ inputs.force_update }}
 
     - name: Download APK
       if: steps.get-version.outputs.skip == 'false'
