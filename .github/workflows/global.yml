@@ -23,6 +23,16 @@ jobs:
       skip: ${{ steps.inspect-apk.outputs.skip }}
       version: ${{ steps.inspect-apk.outputs.version }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          sparse-checkout: |
+            .github/actions/apk_inspector/
+            .scripts/
+            .tools/Cpp2IL
+          sparse-checkout-cone-mode: false
+          fetch-depth: 0
       - name: Inspect APK
         id: inspect-apk
         uses: ./.github/actions/apk_inspector
