@@ -67,7 +67,7 @@ jobs:
         run: |
           echo -n "${{ steps.inspect-apk.outputs.version }}" > version.txt
           echo -n "${{ steps.decompile-apk.outputs.offset }}" > offset.txt
-          zip -r decompiled.zip ./decompiled/DiffableCs/
+          zip -r decompiled.zip ./DiffableCs/
           ./mc alias set target ${{ vars.S3_ENDPOINT }} ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }}
           ./mc cp ./version.txt target/bluearchive/${{ inputs.package_name }}/version.txt
           ./mc cp ./output.xapk target/bluearchive/${{ inputs.package_name }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
