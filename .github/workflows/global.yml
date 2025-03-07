@@ -1,0 +1,54 @@
+name: Update Global Version
+
+on:
+  schedule:
+    # Check every 2 hours from 01:00 (10:00 UTC+9) to 14:00 (23:00 UTC+9) every Tuesday
+    - cron: '0 1-14/2 * * 2'
+  workflow_dispatch:
+    inputs:
+      force_update:
+        type: boolean
+        required: false
+        description: 'Force update the game version'
+      package_name:
+        type: string
+        required: true
+        description: 'The package name of the APK'
+        default: 'com.nexon.bluearchive'
+
+jobs:
+  inspect-apk:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.inspect-apk.outputs.skip }}
+      version: ${{ steps.inspect-apk.outputs.version }}
+    steps:
+      - name: Inspect APK
+        id: inspect-apk
+        uses: ./.github/actions/apk_inspector
+        with:
+          package_name: ${{ inputs.package_name }}
+          force_update: ${{ inputs.force_update }}
+      - name: Prepare for decompilation
+        if: steps.inspect-apk.outputs.skip == 'false'
+        run: |
+          unzip output.xapk
+          unzip -p config.arm64_v8a.apk lib/arm64-v8a/libil2cpp.so > libil2cpp.so
+          unzip -p ${{ inputs.package_name }}.apk assets/bin/Data/Managed/Metadata/global-metadata.dat > global-metadata.dat
+      - name: Decompile APK
+        id: decompile-apk
+        if: steps.inspect-apk.outputs.skip == 'false'
+        run: ./scripts/decompile.sh
+      - name: Upload to S3
+        if: steps.inspect-apk.outputs.skip == 'false'
+        run: |
+          echo "${{ steps.inspect-apk.outputs.version }}" > version.txt
+          echo "${{ steps.decompile-apk.outputs.offset }}" > offset.txt
+          zip -r decompiled.zip ./DiffableCs/
+          ./mc alias set target ${{ vars.S3_ENDPOINT }} ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }}
+          ./mc cp ./version.txt target/bluearchive/${{ inputs.package_name }}/version.txt
+          ./mc cp ./offset.txt target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
+          ./mc cp ./output.xapk target/bluearchive/${{ inputs.package_name }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
+          ./mc cp ./libil2cpp.so target/bluearchive/${{ inputs.package_name }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
+          ./mc cp ./global-metadata.dat target/bluearchive/${{ inputs.package_name }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
+          ./mc cp ./decompiled.zip target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip

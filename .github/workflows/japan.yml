@@ -1,0 +1,69 @@
+name: Update Japan Version
+
+on:
+  schedule:
+    # Check every 2 hours from 01:00 (10:00 JST) to 14:00 (23:00 JST) every Wednesday
+    - cron: '0 1-14/2 * * 3'
+  workflow_dispatch:
+    inputs:
+      force_update:
+        type: boolean
+        required: false
+        description: 'Force update the game version'
+      package_name:
+        type: string
+        required: true
+        description: 'The package name of the APK'
+        default: 'com.YostarJP.BlueArchive'
+
+jobs:
+  inspect-apk:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.inspect-apk.outputs.skip }}
+      version: ${{ steps.inspect-apk.outputs.version }}
+    steps:
+      - name: Inspect APK
+        id: inspect-apk
+        uses: ./.github/actions/apk_inspector
+        with:
+          package_name: ${{ inputs.package_name }}
+          force_update: ${{ inputs.force_update }}
+      - name: Prepare for decompilation
+        if: steps.inspect-apk.outputs.skip == 'false'
+        run: |
+          mkdir -p ./tmp/Data
+          unzip output.xapk
+          unzip -p config.arm64_v8a.apk lib/arm64-v8a/libil2cpp.so > libil2cpp.so
+          unzip -p ${{ inputs.package_name }}.apk assets/bin/Data/Managed/Metadata/global-metadata.dat > global-metadata.dat
+          unzip -j UnityDataAssetPack.apk "assets/bin/Data/*" -d ./tmp/Data/
+      - name: Decompile APK
+        id: decompile-apk
+        if: steps.inspect-apk.outputs.skip == 'false'
+        run: ./scripts/decompile.sh
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Extract bundle version
+        id: extract-bundle-version
+        if: steps.inspect-apk.outputs.skip == 'false'
+        run: |
+          pip install -r requirements.txt
+          python ./scripts/dump_config.py -i ./tmp/Data/ -o ./tmp/GameMainConfig.bytes
+          python ./scripts/decrypt_config.py -i ./tmp/GameMainConfig.bytes -o ./GameMainConfig.json
+      - name: Upload to S3
+        if: steps.inspect-apk.outputs.skip == 'false'
+        run: |
+          echo -n "${{ steps.inspect-apk.outputs.version }}" > version.txt
+          echo -n "${{ steps.decompile-apk.outputs.offset }}" > offset.txt
+          zip -r decompiled.zip ./decompiled/DiffableCs/
+          ./mc alias set target ${{ vars.S3_ENDPOINT }} ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }}
+          ./mc cp ./version.txt target/bluearchive/${{ inputs.package_name }}/version.txt
+          ./mc cp ./output.xapk target/bluearchive/${{ inputs.package_name }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
+          ./mc cp ./libil2cpp.so target/bluearchive/${{ inputs.package_name }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
+          ./mc cp ./global-metadata.dat target/bluearchive/${{ inputs.package_name }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
+          ./mc cp ./offset.txt target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
+          ./mc cp ./decompiled.zip target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
+          ./mc cp ./GameMainConfig.json target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
+

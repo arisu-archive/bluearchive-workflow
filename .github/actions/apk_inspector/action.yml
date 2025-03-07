@@ -1,0 +1,58 @@
+name: APK Inspector
+description: Inspect the APK and extract the version
+
+inputs:
+  package_name:
+    description: The package name of the APK
+    required: true
+  force_update:
+    description: Force update the version
+    required: false
+    default: 'false'
+
+outputs:
+  skip:
+    description: Whether to skip the APK inspection
+    value: ${{ steps.get-version.outputs.skip }}
+  version:
+    description: The version of the APK
+    value: ${{ steps.get-version.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: dev
+        sparse-checkout: |
+          .scripts/
+          .tools/Cpp2IL
+        sparse-checkout-cone-mode: false
+        fetch-depth: 0
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '^1.24'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get install ripgrep
+        curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+        chmod +x mc
+
+    - name: Get APK information
+      shell: bash
+      run: ./scripts/get_info.sh ${{ inputs.package_name }}
+
+    - name: Check the APK version
+      id: get-version
+      shell: bash
+      run: ./scripts/extract_version.sh
+
+    - name: Download APK
+      if: steps.get-version.outputs.skip == 'false'
+      shell: bash
+      run: ./scripts/download.sh ${{ inputs.package_name }}
