@@ -1,97 +1,94 @@
-# Blue Archive Workflow
+# 🎮 Blue Archive Workflow
 
-Automated pipeline that downloads, decompiles, and archives game APKs to S3 using scheduled GitHub Actions.
+<div align="center">
 
-## Overview
+<picture><img src="https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fba.pokeguy.dev%2Fcom.nexon.bluearchive%2Fversion.txt&query=%24&prefix=v&style=for-the-badge&logo=nexon&label=Global&color=0099ff" alt="Nexon BlueArchive Latest Version" style="visibility:visible;max-width:100%;"></picture><picture><img src="https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fba.pokeguy.dev%2Fcom.YostarJP.BlueArchive%2Fversion.txt&query=%24&prefix=v&style=for-the-badge&logo=googleplay&label=Yostar&color=7d3cc8" alt="Yostar BlueArchive Latest Version" style="visibility:visible;max-width:100%;"></picture>
 
-This repository contains a CI/CD pipeline that automatically tracks, analyzes, and archives game APK files. Using GitHub Actions with cron scheduling, the workflow regularly:
+<picture><img src="https://img.shields.io/badge/Made_with-Cpp2IL-5cb85c?style=for-the-badge" alt="Made with Cpp2IL" style="visibility:visible;max-width:100%;"></picture><picture><img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go" style="visibility:visible;max-width:100%;"></picture><picture><img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" style="visibility:visible;max-width:100%;"></picture><picture><img src="https://img.shields.io/badge/Bash-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Bash" style="visibility:visible;max-width:100%;"></picture>
 
-1. Fetches the latest version of target game APK files
-2. Extracts version information and metadata
-3. Decompiles APK contents for analysis
-4. Uploads the original APK, version data, and decompiled files to S3 storage
+</div>
 
-Designed for monitoring game updates, performing security analysis, or tracking implementation changes over time.
+## 🚀 Overview
 
-## Features
+Automated pipeline that downloads, decompiles, and archives Blue Archive game APKs to S3 using scheduled GitHub Actions. Keep track of game updates, analyze changes, and maintain a complete historical archive without manual intervention.
 
-- **Automated Monitoring**: Track game updates without manual intervention
-- **Version History**: Maintain a complete history of APK versions
-- **Decompilation**: Automatically extract source code and resources
-- **Secure Storage**: Archive all artifacts to S3 for long-term storage
-- **Configurable Schedule**: Adjust monitoring frequency as needed
-- **Notification Support**: Optional alerts for new versions (via email, Slack, etc.)
+### ✨ Key Features
 
-## Prerequisites
+- **🔄 Automated Monitoring**: Track game updates with configurable schedules
+- **📊 Version Control**: Maintain complete history of APK versions with detailed changelogs
+- **🧩 Deep Decompilation**: Extract source code, assets, and resources automatically
+- **☁️ Cloud Storage**: Securely archive all artifacts to S3 with intelligent retention policies
+- **📱 Multi-Region Support**: Track both Global (Nexon) and Japan (Yostar) game versions
+
+## 📋 Prerequisites
 
 - GitHub account with Actions enabled
-- S3 bucket configured
-- Target APK source (URL or API endpoint)
+- Minio S3 bucket configured
+- IAM credentials with appropriate permissions
+- APK source endpoints (configured for Blue Archive)
 
-## Setup Instructions
+## ⚙️ Setup Instructions
 
 ### 1. Repository Configuration
 
-1. Fork or clone this repository
-2. Configure GitHub secrets:
-   - `S3_ACCESS_KEY`: Your S3 access key
-   - `S3_SECRET_KEY`: Your S3 secret key
-
-### 2. Workflow Configuration
-
-Edit `.github/workflows/apk-inspector.yml` to customize:
-
-- Schedule frequency (cron expression)
-- APK sources
-- Decompilation options
-- S3 storage paths
-
-### 3. S3 Bucket Setup
-
-Ensure your S3 bucket has:
-- Appropriate lifecycle policies
-- Versioning enabled (recommended)
-- Correct IAM permissions
-
-## How It Works
-
-1. **Scheduling**: GitHub Actions triggers the workflow based on the defined cron schedule
-2. **Download**: The workflow fetches the latest APK from the configured source
-3. **Version Extraction**: APK is analyzed to extract version and metadata
-4. **Decompilation**: Tools like JADX or APKTool are used to decompile the APK
-5. **Storage**: Original APK, metadata, and decompiled files are organized and uploaded to S3
-6. **Notification**: Optional alerts are sent if configured
-
-## Workflow Structure
-
-```
-.github/
-  workflows/
-    apk-inspector.yml  # Main workflow definition
-scripts/
-  download.sh          # APK download script
-  extract-version.sh   # Version extraction utilities
-  decompile.sh         # Decompilation process
-  upload.sh            # S3 upload handler
-  dump_config.py       # Dump the GameMainConfig.bytes file
+```bash
+# Clone this repository
+git clone https://github.com/arisu-archive/blue-archive-workflow.git
+cd blue-archive-workflow
 ```
 
-## Example Usage
+### 2. GitHub Secrets Configuration
 
-### Custom Scheduling
+Configure the following secrets in your GitHub repository:
+
+| Secret Name    | Description            |
+|----------------|------------------------|
+| `S3_ACCESS_KEY` | Your Minio access key |
+| `S3_SECRET_KEY` | Your Minio secret key |
+| `S3_ENDPOINT`   | Your Minio endpoint   |
+
+### 3. Workflow Configuration
+
+Reference `.github/workflows/global.yml` and `.github/workflows/japan.yml` for the full workflow.
 
 ```yaml
-# .github/workflows/global.yml
-on:
-  schedule:
-    # Check every day at 2 AM UTC
-    - cron: '0 2 * * *'
-  workflow_dispatch:  # Allow manual triggering
+schedule:
+  # Check every 6 hours
+  - cron: '0 */6 * * *'
 ```
 
-## Contributing
+## 🔍 How It Works
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. **Scheduling**: GitHub Actions triggers the workflow on a defined schedule
+2. **Version Check**: System compares latest available APK with last archived version
+3. **Download**: If new version is detected, APK is downloaded from official sources
+4. **Metadata Extraction**: Version info, file hashes, and timestamps are recorded
+5. **Decompilation**: Advanced tools extract code, assets, and configuration files
+6. **Storage**: All artifacts are organized and uploaded to S3 with proper metadata
+
+## 📁 Repository Structure
+
+```
+├── .github/
+│   ├── actions/
+│   │   ├── apk_inspector/
+│   │   │   └── action.yml       # Action definition
+│   ├── workflows/
+│   │   ├── global.yml           # Global workflow
+│   │   └── japan.yml            # Japan workflow
+├── scripts/
+│   ├── download.sh              # APK downloader
+│   ├── extract-version.sh       # Version extractor
+│   ├── decompile.sh             # Decompilation utilities
+│   ├── upload.sh                # S3 upload handler
+│   └── dump_config.py           # Config file analyzer
+├── LICENSE                      # MIT License
+└── README.md                    # This file
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -99,10 +96,22 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
+## 📜 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Disclaimer
+## ⚠️ Disclaimer
 
 This tool is intended for legitimate research, analysis, and monitoring purposes only. Always ensure you comply with the terms of service of any application you analyze and all relevant laws and regulations.
+
+## 📬 Contact & Support
+
+- Create an [Issue](https://github.com/arisu-archive/blue-archive-workflow/issues) for bug reports or feature requests
+- Star ⭐ the repo if you find it useful
+- Follow for updates on new features and improvements
+
+---
+
+<div align="center">
+<strong>Built with ❤️ for the Blue Archive community</strong>
+</div>
