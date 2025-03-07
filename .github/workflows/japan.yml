@@ -30,6 +30,7 @@ jobs:
             .github/actions/apk_inspector/
             scripts/
             .tools/Cpp2IL
+            requirements.txt
           sparse-checkout-cone-mode: false
           fetch-depth: 0
       - name: Inspect APK
@@ -75,4 +76,3 @@ jobs:
           ./mc cp ./offset.txt target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
           ./mc cp ./decompiled.zip target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
           ./mc cp ./GameMainConfig.json target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
-
