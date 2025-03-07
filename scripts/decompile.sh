@@ -7,6 +7,6 @@
 
 echo "Extracting protocolConverter VA offset value..."
 offset=$(rg -o --no-filename -B 2 -F "public int TypeConversion(uint crc, Protocol protocol)" ./DiffableCs/BlueArchive/MX/NetworkProtocol/ProtocolConverter.cs | rg -o -r '$1' 'Offset = "(0x[0-9A-Z]+)"')
-echo "::info title=VA Offset::$offset"
+echo "::notice title=VA Offset::$offset"
 echo "offset=$offset" >> $GITHUB_OUTPUT
 echo "Offset extracted."
