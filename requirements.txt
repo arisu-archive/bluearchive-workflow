@@ -1,1 +1,1 @@
-UnityPy==1.21.0
+UnityPy==1.21.2
