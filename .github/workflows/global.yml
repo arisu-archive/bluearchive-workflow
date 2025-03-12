@@ -12,9 +12,12 @@ on:
         description: 'Force update the game version'
       package_name:
         type: string
-        required: true
+        required: false
         description: 'The package name of the APK'
-        default: 'com.nexon.bluearchive'
+
+env:
+  PACKAGE_NAME: ${{ inputs.package_name || 'com.nexon.bluearchive' }}
+  FORCE_UPDATE: ${{ inputs.force_update || 'false' }}
 
 jobs:
   inspect-apk:
@@ -36,14 +39,14 @@ jobs:
         id: inspect-apk
         uses: ./.github/actions/apk_inspector
         with:
-          package_name: ${{ inputs.package_name }}
-          force_update: ${{ inputs.force_update }}
+          package_name: ${{ env.PACKAGE_NAME }}
+          force_update: ${{ env.FORCE_UPDATE }}
       - name: Prepare for decompilation
         if: steps.inspect-apk.outputs.skip == 'false'
         run: |
           unzip output.xapk
           unzip -p config.arm64_v8a.apk lib/arm64-v8a/libil2cpp.so > libil2cpp.so
-          unzip -p ${{ inputs.package_name }}.apk assets/bin/Data/Managed/Metadata/global-metadata.dat > global-metadata.dat
+          unzip -p ${{ env.PACKAGE_NAME }}.apk assets/bin/Data/Managed/Metadata/global-metadata.dat > global-metadata.dat
       - name: Decompile APK
         id: decompile-apk
         if: steps.inspect-apk.outputs.skip == 'false'
@@ -55,9 +58,9 @@ jobs:
           echo "${{ steps.decompile-apk.outputs.offset }}" > offset.txt
           zip -r decompiled.zip ./DiffableCs/
           ./mc alias set target ${{ vars.S3_ENDPOINT }} ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }}
-          ./mc cp ./version.txt target/bluearchive/${{ inputs.package_name }}/version.txt
-          ./mc cp ./offset.txt target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
-          ./mc cp ./output.xapk target/bluearchive/${{ inputs.package_name }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
-          ./mc cp ./libil2cpp.so target/bluearchive/${{ inputs.package_name }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
-          ./mc cp ./global-metadata.dat target/bluearchive/${{ inputs.package_name }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
-          ./mc cp ./decompiled.zip target/bluearchive/${{ inputs.package_name }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
+          ./mc cp ./version.txt target/bluearchive/${{ env.PACKAGE_NAME }}/version.txt
+          ./mc cp ./offset.txt target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
+          ./mc cp ./output.xapk target/bluearchive/${{ env.PACKAGE_NAME }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
+          ./mc cp ./libil2cpp.so target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
+          ./mc cp ./global-metadata.dat target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
+          ./mc cp ./decompiled.zip target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip

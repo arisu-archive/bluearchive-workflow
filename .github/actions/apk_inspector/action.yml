@@ -35,7 +35,7 @@ runs:
 
     - name: Get APK information
       shell: bash
-      run: ./scripts/get_info.sh ${{ inputs.package_name }} ${{ inputs.force_update }}
+      run: ./scripts/get_info.sh ${{ inputs.package_name }}
 
     - name: Check the APK version
       id: get-version
