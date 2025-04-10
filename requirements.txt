@@ -1,2 +1,2 @@
-UnityPy==1.21.2
+UnityPy==1.22.2
 xxhash==3.5.0
