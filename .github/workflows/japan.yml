@@ -2,8 +2,8 @@ name: Update Japan Version
 
 on:
   schedule:
-    # Check every 2 hours from 01:00 (10:00 JST) to 14:00 (23:00 JST) every Wednesday
-    - cron: '0 1-14/2 * * 3'
+    # Check every 2 hours from 01:00 (10:00 JST) to 14:00 (23:00 JST) everyday
+    - cron: '0 1-14/2 * * *'
   workflow_dispatch:
     inputs:
       force_update:
