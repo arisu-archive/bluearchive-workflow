@@ -1,7 +1,7 @@
 #!/bin/bash
 
 package_name=$1
-skip=$2
+force_update=$2
 
 if [ ! -f output.json ]; then
     echo "APK version not found. Skipping..."
@@ -18,9 +18,9 @@ if [ -z "$latest_version" ]; then
     exit 0
 fi
 
-if [ "$skip" = "true" ]; then
-    echo "Skipping update..."
-    echo "skip=true" >> $GITHUB_OUTPUT
+if [ "$force_update" = "true" ]; then
+    echo "Skipping version check. Force update"
+    echo "skip=false" >> $GITHUB_OUTPUT
     exit 0
 fi
 
