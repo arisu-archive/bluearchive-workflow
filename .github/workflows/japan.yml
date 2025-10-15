@@ -14,6 +14,7 @@ on:
         type: string
         required: false
         description: 'The package name of the APK'
+        default: 'com.YostarJP.BlueArchive'
 
 env:
   PACKAGE_NAME: ${{ inputs.package_name || 'com.YostarJP.BlueArchive' }}
