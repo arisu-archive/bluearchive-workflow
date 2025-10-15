@@ -1,2 +1,2 @@
 UnityPy==1.23.0
-xxhash==3.5.0
+xxhash==3.6.0
