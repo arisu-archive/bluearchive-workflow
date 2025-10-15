@@ -33,7 +33,7 @@ jobs:
           sparse-checkout: |
             .github/actions/apk_inspector/
             scripts/
-            .tools/Cpp2IL
+            .tools/Il2CppInspector.Redux.CLI
             requirements.txt
           sparse-checkout-cone-mode: false
           fetch-depth: 0
