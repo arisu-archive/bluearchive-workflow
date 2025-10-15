@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ./.tools/Cpp2IL --force-binary-path ./libil2cpp.so \
-    --force-metadata-path global-metadata.dat --force-unity-version 29 \
+    --force-metadata-path global-metadata.dat --force-unity-version 31 \
     --use-processor attributeinjector \
     --output-as diffable-cs --output-to ./
 
