@@ -5,7 +5,7 @@
     --suppress-metadata --suppress-dll-metadata --select-outputs cs
 
 echo "Extracting protocolConverter VA offset value..."
-offset=$(rg -o --no-filename -B 2 -F "public int TypeConversion(uint crc, Protocol protocol)" ./DiffableCs/BlueArchive/MX/NetworkProtocol/ProtocolConverter.cs | rg -o -r '$1' 'Offset = "(0x[0-9A-Z]+)"')
+offset=$(rg "^\s+public int TypeConversion\(uint crc, Protocol protocol\);.*// (0x[0-9A-F]+)-" -o --no-filename -r '$1' ./DiffableCs/BlueArchive/MX/NetworkProtocol/ProtocolConverter.cs)
 echo "::notice title=VA Offset::$offset"
 echo "offset=$offset" >> $GITHUB_OUTPUT
 echo "Offset extracted."
