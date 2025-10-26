@@ -43,6 +43,12 @@ jobs:
         with:
           package_name: ${{ env.PACKAGE_NAME }}
           force_update: ${{ env.FORCE_UPDATE }}
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get install ripgrep
+          curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
       - name: Prepare for decompilation
         if: steps.inspect-apk.outputs.skip == 'false'
         run: |
