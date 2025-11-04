@@ -44,6 +44,7 @@ jobs:
           package_name: ${{ env.PACKAGE_NAME }}
           force_update: ${{ env.FORCE_UPDATE }}
       - name: Install dependencies
+        if: steps.inspect-apk.outputs.skip == 'false'
         shell: bash
         run: |
           sudo apt-get install ripgrep
