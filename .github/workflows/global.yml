@@ -28,7 +28,7 @@ jobs:
       version: ${{ steps.inspect-apk.outputs.version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github/actions/apk_inspector/
