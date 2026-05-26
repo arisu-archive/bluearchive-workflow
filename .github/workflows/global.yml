@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get install ripgrep
-          curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+          curl -O -L https://dl.min.io/client/mc/release/linux-amd64/mc
           chmod +x mc
       - name: Prepare for decompilation
         if: steps.inspect-apk.outputs.skip == 'false'
