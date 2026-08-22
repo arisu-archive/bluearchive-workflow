@@ -58,6 +58,10 @@ jobs:
           blacklist_versions: ${{ vars.JAPAN_BLACKLISTED_VERSIONS || '' }}
           apk_url: ${{ env.APK_URL || '' }}
           override_version: ${{ env.OVERRIDE_VERSION || '' }}
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
       - name: Install dependencies
         if: steps.inspect-apk.outputs.skip == 'false'
         shell: bash
@@ -80,10 +84,6 @@ jobs:
         id: decompile-apk
         if: steps.inspect-apk.outputs.skip == 'false'
         run: ./scripts/decompile.sh
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
       - name: Extract bundle version
         id: extract-bundle-version
         if: steps.inspect-apk.outputs.skip == 'false'
