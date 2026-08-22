@@ -68,6 +68,7 @@ jobs:
       - name: Prepare for decompilation
         if: steps.inspect-apk.outputs.skip == 'false'
         run: |
+          pip install -r requirements.txt
           mkdir -p ./tmp/Data
           unzip output.xapk
           unzip -j config.arm64_v8a.apk "lib/arm64-v8a/*" -d arm64-v8a
@@ -87,7 +88,6 @@ jobs:
         id: extract-bundle-version
         if: steps.inspect-apk.outputs.skip == 'false'
         run: |
-          pip install -r requirements.txt
           python ./scripts/dump_config.py -i ./tmp/Data/ -o ./tmp/GameMainConfig.bytes
           python ./scripts/decrypt_config.py -i ./tmp/GameMainConfig.bytes -o ./GameMainConfig.json
       - name: Upload to S3
