@@ -12,3 +12,6 @@ offset=$(rg "^\s+public int TypeConversion\(uint crc, Protocol protocol\);.*// (
 echo "::notice title=VA Offset::$offset"
 echo "offset=$offset" >> $GITHUB_OUTPUT
 echo "Offset extracted."
+
+echo "Extracting the public key"
+python ./scripts/extract_key.py --binary libil2cpp.so --metadata global-metadata.dat --find "BEGIN PUBLIC KEY" --output key.pem

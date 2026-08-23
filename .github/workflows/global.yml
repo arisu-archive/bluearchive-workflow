@@ -87,3 +87,4 @@ jobs:
           ./mc cp ./libil2cpp.so target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
           ./mc cp ./global-metadata.dat target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
           ./mc cp ./decompiled.zip target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
+          ./mc cp ./key.pem target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/key.pem

@@ -104,3 +104,4 @@ jobs:
           ./mc cp ./offset.txt target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
           ./mc cp ./decompiled.zip target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
           ./mc cp ./GameMainConfig.json target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
+          ./mc cp ./key.pem target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/key.pem
