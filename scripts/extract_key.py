@@ -1,25 +1,24 @@
 #!/usr/bin/env python3
-"""Recover concatenated byte-array blobs from an IL2CPP Windows build.
+"""Recover concatenated byte-array blobs from IL2CPP native binaries.
 
 Unity splits a large `byte[]` literal into several `RuntimeHelpers.InitializeArray`
 calls, each copying one chunk out of `global-metadata.dat`. This script recovers
 those chunks straight from the shipped files:
 
-  * function bounds come from the PE exception directory (.pdata),
-  * field handles come from `mov rdx, [rip+disp32]` slots holding an unresolved
-    IL2CPP metadata-usage token,
-  * chunk lengths come from the `mov edx, imm32` feeding each array allocation,
-  * `Il2CppMetadataRegistration` is located by its typedef-count fields.
+On AMD64 Windows builds the chunk layout is recovered from PE code and
+`Il2CppMetadataRegistration`. On AArch64 Android builds a PEM public key is
+reassembled directly from its metadata-backed fragments.
 
 Nothing depends on symbol names, an IDA database, or a prior Il2CppInspector run,
 so it works on a freshly shipped binary.
 
-Only x86-64 PE images are supported; the ARM64 `libil2cpp.so` shipped on Android
-uses a different instruction sequence and is not handled here.
+AMD64 PE images and AArch64 ELF images are supported.
 """
 
 import argparse
+import base64
 import bisect
+import re
 import struct
 import sys
 
@@ -32,6 +31,7 @@ from capstone.x86 import (
     X86_REG_RDX,
     X86_REG_RIP,
 )
+from Crypto.PublicKey import RSA
 
 METADATA_MAGIC = 0xFAB11BAF
 METADATA_VERSION = 31
@@ -44,6 +44,13 @@ TYPE_DEFINITION_SIZE = 88
 FIELD_DEFINITION_SIZE = 12
 FIELD_DEFAULT_VALUE_SIZE = 12
 FIELD_REF_SIZE = 8
+
+PEM_BEGIN = b"-----BEGIN PUBLIC KEY-----"
+PEM_END = b"-----END PUBLIC KEY-----"
+BASE64_RUN = re.compile(rb"[A-Za-z0-9+/=\r\n]{32,}")
+BASE64_BYTES = frozenset(
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\r\n"
+)
 
 RDX_ALIASES = frozenset(
     (X86_REG_RDX, X86_REG_EDX, X86_REG_DX, X86_REG_DL, X86_REG_DH)
@@ -91,6 +98,8 @@ class ExtractionError(Exception):
 
 class PE64:
     """Minimal read-only PE32+ reader (no third-party dependency)."""
+
+    architecture = "amd64"
 
     def __init__(self, path):
         with open(path, "rb") as handle:
@@ -266,6 +275,106 @@ class Metadata:
             return None
         start = offset + data_index
         return self.data[start:start + length]
+
+
+def binary_architecture(path):
+    """Return the supported architecture identified by the native header."""
+    with open(path, "rb") as handle:
+        header = handle.read(20)
+
+    if header[:2] == b"MZ":
+        return "amd64"
+    if header[:4] != b"\x7fELF":
+        raise ExtractionError(f"{path}: unsupported binary format")
+    if len(header) < 20 or header[4:6] != b"\x02\x01":
+        raise ExtractionError(f"{path}: expected little-endian ELF64")
+
+    machine = struct.unpack_from("<H", header, 18)[0]
+    if machine != 0xB7:
+        raise ExtractionError(f"{path}: unsupported ELF machine {machine:#x}")
+    return "aarch64"
+
+
+def _without_line_breaks(data):
+    return data.replace(b"\r", b"").replace(b"\n", b"")
+
+
+def _expected_base64_length(prefix):
+    padded = prefix + b"=" * (-len(prefix) % 4)
+    try:
+        decoded = base64.b64decode(padded, validate=True)
+    except ValueError as error:
+        raise ExtractionError("public-key prefix is not valid base64") from error
+
+    if len(decoded) < 2 or decoded[0] != 0x30:
+        raise ExtractionError("public-key prefix is not a DER sequence")
+    length_byte = decoded[1]
+    if length_byte < 0x80:
+        der_length = 2 + length_byte
+    else:
+        length_size = length_byte & 0x7F
+        if not 0 < length_size <= 4 or len(decoded) < 2 + length_size:
+            raise ExtractionError("public-key DER length is malformed")
+        content_length = int.from_bytes(decoded[2:2 + length_size], "big")
+        der_length = 2 + length_size + content_length
+    return ((der_length + 2) // 3) * 4
+
+
+def recover_public_key(data):
+    """Reassemble one PEM public key split across metadata byte arrays."""
+    if data.count(PEM_BEGIN) != 1 or data.count(PEM_END) != 1:
+        raise ExtractionError("expected exactly one PEM public-key marker pair")
+
+    begin = data.index(PEM_BEGIN)
+    end = data.index(PEM_END)
+    if end <= begin:
+        raise ExtractionError("PEM public-key markers are out of order")
+
+    prefix_start = begin + len(PEM_BEGIN)
+    if data[prefix_start:prefix_start + 2] == b"\r\n":
+        prefix_start += 2
+    elif data[prefix_start:prefix_start + 1] in (b"\r", b"\n"):
+        prefix_start += 1
+
+    prefix_end = prefix_start
+    while prefix_end < len(data) and data[prefix_end] in BASE64_BYTES:
+        prefix_end += 1
+
+    suffix_start = end
+    while suffix_start > 0 and data[suffix_start - 1] in BASE64_BYTES:
+        suffix_start -= 1
+
+    prefix = _without_line_breaks(data[prefix_start:prefix_end])
+    suffix = _without_line_breaks(data[suffix_start:end])
+    expected_length = _expected_base64_length(prefix)
+    missing_length = expected_length - len(prefix) - len(suffix)
+    if missing_length < 0:
+        raise ExtractionError("PEM fragments exceed the encoded DER length")
+
+    middles = [b""] if missing_length == 0 else []
+    for match in BASE64_RUN.finditer(data):
+        if match.start() < prefix_end and match.end() > prefix_start:
+            continue
+        if match.start() < end and match.end() > suffix_start:
+            continue
+        candidate = _without_line_breaks(match.group())
+        if len(candidate) == missing_length:
+            middles.append(candidate)
+
+    valid = set()
+    for middle in middles:
+        payload = prefix + middle + suffix
+        lines = [payload[i:i + 64] for i in range(0, len(payload), 64)]
+        pem = b"\n".join((PEM_BEGIN, *lines, PEM_END, b""))
+        try:
+            RSA.import_key(pem)
+        except (IndexError, ValueError, TypeError):
+            continue
+        valid.add(pem)
+
+    if len(valid) != 1:
+        raise ExtractionError(f"expected one valid public key, found {len(valid)}")
+    return valid.pop()
 
 
 def pdata_index(pe):
@@ -590,10 +699,12 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         description=(
             "Recover concatenated IL2CPP byte-array blobs from GameAssembly.dll "
-            "and global-metadata.dat without symbols."
+            "or libil2cpp.so and global-metadata.dat without symbols."
         )
     )
-    parser.add_argument("--binary", required=True, help="path to GameAssembly.dll")
+    parser.add_argument(
+        "--binary", required=True, help="path to GameAssembly.dll or libil2cpp.so"
+    )
     parser.add_argument("--metadata", required=True, help="path to global-metadata.dat")
 
     selector = parser.add_mutually_exclusive_group(required=True)
@@ -629,8 +740,27 @@ def parse_args(argv):
 def main(argv):
     args = parse_args(argv)
 
-    pe = PE64(args.binary)
     metadata = Metadata(args.metadata)
+    architecture = binary_architecture(args.binary)
+
+    if architecture == "aarch64":
+        if not args.find or "PUBLIC KEY" not in args.find:
+            raise ExtractionError(
+                "AArch64 extraction supports --find PUBLIC KEY only"
+            )
+
+        offset, size = metadata.sections["fieldAndParameterDefaultValueData"]
+        blob = recover_public_key(metadata.data[offset:offset + size])
+        print(f"metadata public key ({len(blob)} bytes)", file=sys.stderr)
+        if args.output:
+            with open(args.output, "wb") as handle:
+                handle.write(blob)
+            print(f"wrote {len(blob)} bytes to {args.output}", file=sys.stderr)
+        else:
+            sys.stdout.buffer.write(blob)
+        return 0
+
+    pe = PE64(args.binary)
     registration = find_metadata_registration(pe, metadata.type_definition_count)
     field_refs = build_field_ref_table(pe, metadata, registration)
     default_values = metadata.field_default_values()
