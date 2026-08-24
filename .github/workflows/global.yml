@@ -46,6 +46,7 @@ jobs:
             .github/actions/apk_inspector/
             scripts/
             .tools/Il2CppInspector
+            requirements.txt
           sparse-checkout-cone-mode: false
           fetch-depth: 0
       - name: Inspect APK
