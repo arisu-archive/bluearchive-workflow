@@ -57,6 +57,10 @@ jobs:
           blacklist_versions: ${{ vars.GLOBAL_BLACKLISTED_VERSIONS || '' }}
           apk_url: ${{ env.APK_URL || '' }}
           override_version: ${{ env.OVERRIDE_VERSION || '' }}
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
       - name: Install dependencies
         if: steps.inspect-apk.outputs.skip == 'false'
         shell: bash
@@ -67,6 +71,7 @@ jobs:
       - name: Prepare for decompilation
         if: steps.inspect-apk.outputs.skip == 'false'
         run: |
+          pip install -r requirements.txt
           unzip output.xapk
           unzip -p config.arm64_v8a.apk lib/arm64-v8a/libil2cpp.so > libil2cpp.so
           unzip -p ${{ env.PACKAGE_NAME }}.apk assets/bin/Data/Managed/Metadata/global-metadata.dat > global-metadata.dat
