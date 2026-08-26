@@ -52,7 +52,10 @@ Pipeline, all of it read out of the loader rather than guessed:
 
   7. LZMA             sub_520EC = LzmaUncompress(dst, &dstlen, src, &srclen,
                       props, 5); raw LZMA1 stream, parameters from the props byte
-                      and dictionary size
+                      and dictionary size. dstlen goes in as the header's
+                      unpacked size and bounds the output: the stream carries no
+                      end marker, so that size is the only thing that says where
+                      the original file stops.
 
 Usage:
   appsign_unpack.py libgentater.so                     # unpack into ./unpacked
@@ -255,24 +258,34 @@ def lzma_filters(props):
 
 
 def lzma_stream(src, filters, expected, sink, limit=None):
+    """Decode the raw LZMA1 stream, never emitting more than `expected` bytes.
+
+    The cap is the contract, not a safety margin. LzmaUncompress is called with
+    dstlen = expected and stops there; a raw LZMA1 stream has no end marker, so a
+    decoder left to run on decodes the range coder's trailing bits into extra
+    bytes that were never part of the original file.
+
+    `limit` caps it further for a partial decode. A short return still means a
+    truncated or corrupt stream, which is what the caller checks for.
+    """
+    cap = expected if limit is None else min(limit, expected)
     dec = lzma.LZMADecompressor(format=lzma.FORMAT_RAW, filters=filters)
     written = 0
     pos = 0
     digest = hashlib.sha256()
-    while pos < len(src) and (limit is None or written < limit):
-        want = CHUNK if limit is None else min(CHUNK, limit - written)
-        out = dec.decompress(src[pos:pos + CHUNK], max_length=want)
-        pos += CHUNK
-        if out:
-            digest.update(out)
-            sink(out)
-            written += len(out)
-        if dec.eof:
-            break
-    while limit is None and not dec.eof and written < expected:
-        out = dec.decompress(b"", max_length=CHUNK)
+    while written < cap and not dec.eof:
+        if dec.needs_input:
+            if pos >= len(src):
+                break
+            chunk = src[pos:pos + CHUNK]
+            pos += len(chunk)
+        else:
+            chunk = b""
+        out = dec.decompress(chunk, max_length=min(CHUNK, cap - written))
         if not out:
-            break
+            if not chunk:
+                break
+            continue
         digest.update(out)
         sink(out)
         written += len(out)
