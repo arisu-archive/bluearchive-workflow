@@ -67,8 +67,6 @@ jobs:
         shell: bash
         run: |
           sudo apt-get install ripgrep
-          curl -O -L https://dl.min.io/client/mc/release/linux-amd64/mc
-          chmod +x mc
       - name: Prepare for decompilation
         if: steps.inspect-apk.outputs.skip == 'false'
         run: |
@@ -92,16 +90,21 @@ jobs:
           python ./scripts/decrypt_config.py -i ./tmp/GameMainConfig.bytes -o ./GameMainConfig.json
       - name: Upload to S3
         if: steps.inspect-apk.outputs.skip == 'false'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ENDPOINT_URL: ${{ vars.S3_ENDPOINT }}
         run: |
+          : "${AWS_ENDPOINT_URL:?S3_ENDPOINT must be set}"
           echo -n "${{ steps.inspect-apk.outputs.version }}" > version.txt
           echo -n "${{ steps.decompile-apk.outputs.offset }}" > offset.txt
           zip -r decompiled.zip ./DiffableCs/
-          ./mc alias set target ${{ vars.S3_ENDPOINT }} ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }}
-          ./mc cp ./version.txt target/bluearchive/${{ env.PACKAGE_NAME }}/version.txt
-          ./mc cp ./output.xapk target/bluearchive/${{ env.PACKAGE_NAME }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
-          ./mc cp ./libil2cpp.so target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
-          ./mc cp ./global-metadata.dat target/bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
-          ./mc cp ./offset.txt target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
-          ./mc cp ./decompiled.zip target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
-          ./mc cp ./GameMainConfig.json target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
-          ./mc cp ./key.pem target/bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/key.pem
+          aws s3 cp ./version.txt s3://bluearchive/${{ env.PACKAGE_NAME }}/version.txt
+          aws s3 cp ./output.xapk s3://bluearchive/${{ env.PACKAGE_NAME }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
+          aws s3 cp ./libil2cpp.so s3://bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
+          aws s3 cp ./global-metadata.dat s3://bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
+          aws s3 cp ./offset.txt s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
+          aws s3 cp ./decompiled.zip s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
+          aws s3 cp ./GameMainConfig.json s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
+          aws s3 cp ./key.pem s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/key.pem

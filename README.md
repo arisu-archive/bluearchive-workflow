@@ -10,7 +10,7 @@
 
 ## 🚀 Overview
 
-Automated pipeline that downloads, decompiles, and archives Blue Archive game APKs to S3 using scheduled GitHub Actions. Keep track of game updates, analyze changes, and maintain a complete historical archive without manual intervention.
+Automated pipeline that downloads, decompiles, and archives Blue Archive game APKs to S3 using AWS CLI in scheduled GitHub Actions. Keep track of game updates, analyze changes, and maintain a complete historical archive without manual intervention.
 
 ### ✨ Key Features
 
@@ -23,7 +23,7 @@ Automated pipeline that downloads, decompiles, and archives Blue Archive game AP
 ## 📋 Prerequisites
 
 - GitHub account with Actions enabled
-- Minio S3 bucket configured
+- S3-compatible `bluearchive` bucket configured
 - IAM credentials with appropriate permissions
 - APK source endpoints (configured for Blue Archive)
 
@@ -39,13 +39,13 @@ cd blue-archive-workflow
 
 ### 2. GitHub Secrets Configuration
 
-Configure the following secrets in your GitHub repository:
+Configure the following secrets and variable in your GitHub repository:
 
 | Secret Name    | Description            |
 |----------------|------------------------|
-| `S3_ACCESS_KEY` | Your Minio access key |
-| `S3_SECRET_KEY` | Your Minio secret key |
-| `S3_ENDPOINT`   | Your Minio endpoint   |
+| `S3_ACCESS_KEY` | S3 access key (secret) |
+| `S3_SECRET_KEY` | S3 secret key (secret) |
+| `S3_ENDPOINT`   | S3-compatible endpoint URL (variable) |
 
 ### 3. Workflow Configuration
 
