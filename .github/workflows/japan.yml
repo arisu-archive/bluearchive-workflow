@@ -101,10 +101,10 @@ jobs:
           echo -n "${{ steps.decompile-apk.outputs.offset }}" > offset.txt
           zip -r decompiled.zip ./DiffableCs/
           aws s3 cp ./version.txt s3://bluearchive/${{ env.PACKAGE_NAME }}/version.txt
-          aws s3 cp ./output.xapk s3://bluearchive/${{ env.PACKAGE_NAME }}/apks/${{ steps.inspect-apk.outputs.version }}/output.xapk
-          aws s3 cp ./libil2cpp.so s3://bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
-          aws s3 cp ./global-metadata.dat s3://bluearchive/${{ env.PACKAGE_NAME }}/libraries/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
-          aws s3 cp ./offset.txt s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/offset.txt
-          aws s3 cp ./decompiled.zip s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
-          aws s3 cp ./GameMainConfig.json s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
-          aws s3 cp ./key.pem s3://bluearchive/${{ env.PACKAGE_NAME }}/decompiled/${{ steps.inspect-apk.outputs.version }}/key.pem
+          aws s3 cp ./output.xapk s3://bluearchive/${{ env.PACKAGE_NAME }}/${{ steps.inspect-apk.outputs.version }}/output.xapk
+          aws s3 cp ./libil2cpp.so s3://bluearchive/${{ env.PACKAGE_NAME }}/${{ steps.inspect-apk.outputs.version }}/libil2cpp.so
+          aws s3 cp ./global-metadata.dat s3://bluearchive/${{ env.PACKAGE_NAME }}/${{ steps.inspect-apk.outputs.version }}/global-metadata.dat
+          aws s3 cp ./offset.txt s3://bluearchive/${{ env.PACKAGE_NAME }}/${{ steps.inspect-apk.outputs.version }}/offset.txt
+          aws s3 cp ./decompiled.zip s3://bluearchive/${{ env.PACKAGE_NAME }}/${{ steps.inspect-apk.outputs.version }}/decompiled.zip
+          aws s3 cp ./GameMainConfig.json s3://bluearchive/${{ env.PACKAGE_NAME }}/${{ steps.inspect-apk.outputs.version }}/GameMainConfig.json
+          aws s3 cp ./key.pem s3://bluearchive/${{ env.PACKAGE_NAME }}/${{ steps.inspect-apk.outputs.version }}/key.pem
